@@ -1,4 +1,4 @@
-# Yes_we_GAN
+# Yes we GAN
 Small project on GANs. Experimenting with basic GAN types
 
 The present project is an introductory attempt to experiment with different kinds of GANs architectures and datasets. It is based on various papers, tutorials, blog posts and github repositories, some of which are mentioned as sources at the code files.
