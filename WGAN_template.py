@@ -29,7 +29,7 @@ def clip_weight(weight, lower, upper):
 
 
 class WGAN:
-    def __init__(self, dimensions, models, save_folders, dataset, clip=-1, optimizer='RMSprop'):
+    def __init__(self, dimensions, models, save_folders, dataset, optimizer='RMSprop'):
         self.dimensions = dimensions
         self.data_shape = dimensions['data_shape']
         self.latent_dim = dimensions['latent_dim']
@@ -37,7 +37,6 @@ class WGAN:
         self.save_folders = save_folders
         self.gray = dataset == 'mnist'
         self.epoch = 0
-        self.clip = clip
 
         # Build and compile the discriminator
         self.discriminator = models['discriminator']
@@ -70,10 +69,14 @@ class WGAN:
         self.generator.save('Model_para/models_wgan_generated_epoch_%d.h5' % self.epoch)
         self.discriminator.save('Model_para/models_wgan_discriminated_epoch_%d.h5' % self.epoch)
 
-    def train(self, data_iterator, sample_results, save_models,
-              epochs, batch_size=128,
-              sample_interval=200, model_interval=500,
-              gen_to_disc_ratio=1):
+    def train(self, data_iterator, sample_results, save_models, train_params):
+
+        epochs = train_params['epochs']
+        batch_size = train_params['batch_size']
+        sample_interval = train_params['sample_interval']
+        model_interval = train_params['model_interval']
+        gen_to_disc_ratio = train_params['gen_to_disc_ratio']
+        wgan_clip = train_params['wgan_clip']
 
         # # Adversarial ground truths
         # valid = np.ones((batch_size, 1)) * -1
@@ -89,7 +92,7 @@ class WGAN:
 
         data_iter = data_iterator(batch_size)
 
-        for epoch in range(epochs):
+        for epoch in range(1, epochs + 1):
             self.epoch = epoch
 
             # ---------------------
@@ -113,10 +116,10 @@ class WGAN:
                 # d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
                 d_loss = self.discriminator.train_on_batch(X, yDis)
 
-                if self.clip != -1:
+                if wgan_clip != -1:
                     # clip weights of discriminator
                     d_weight = self.discriminator.get_weights()
-                    d_weight = clip_weight(d_weight, -self.clip, self.clip)
+                    d_weight = clip_weight(d_weight, -wgan_clip, wgan_clip)
                     self.discriminator.set_weights(d_weight)
 
             # ---------------------
