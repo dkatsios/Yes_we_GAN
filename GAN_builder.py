@@ -5,8 +5,6 @@ from Data_handlers import get_data_iterator, sample_results, save_models, make_f
 from GAN_template import GAN
 from WGAN_template import WGAN
 
-latent_sqrt = 10
-
 
 def build_and_train(models_labels, dataset_label, im_dim, train_params):
     if dataset_label == 'mnist':
@@ -24,7 +22,7 @@ def build_and_train(models_labels, dataset_label, im_dim, train_params):
 
     save_folders = {'results_folder': save_results_folder,
                     'models_folder': save_models_folder}
-    latent_dim = 100  # latent_sqrt ** 2
+    latent_dim = 100
 
     model_params = {'data_shape': data_shape,
                     'latent_dim': latent_dim,
