@@ -29,13 +29,14 @@ def clip_weight(weight, lower, upper):
 
 
 class WGAN:
-    def __init__(self, dimensions, models, save_folders, dataset, optimizer='RMSprop'):
-        self.dimensions = dimensions
-        self.data_shape = dimensions['data_shape']
-        self.latent_dim = dimensions['latent_dim']
-        self.output_shape = dimensions['data_shape']
+    def __init__(self, model_params, models, save_folders, dataset, optimizer='RMSprop'):
+
+        self.model_params = model_params
+        self.data_shape = model_params['data_shape']
+        self.latent_dim = model_params['latent_dim']
+        self.output_shape = model_params['data_shape']
         self.save_folders = save_folders
-        self.gray = dataset == 'mnist'
+        self.gray = self.data_shape[-1] == 1
         self.epoch = 0
 
         # Build and compile the discriminator
@@ -48,7 +49,7 @@ class WGAN:
         self.generator = models['generator']
 
         # The generator takes noise as input and generates imgs
-        z = Input(shape=(dimensions['latent_dim'],))
+        z = Input(shape=(model_params['latent_dim'],))
         img = self.generator(z)
 
         # For the combined model we will only train the generator
@@ -137,10 +138,11 @@ class WGAN:
                 print("%d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch, d_loss[0], 100 * d_loss[1], g_loss))
 
             # If at save interval => save generated image samples
-            if epoch % sample_interval == 0 and sample_results is not None:
-                sample_results(epoch, self.generator, self.dimensions,
-                               self.save_folders['results_folder'], self.gray)
+            if sample_interval is not None and epoch % sample_interval == 0 and sample_results is not None:
+                sample_results(epoch, self.generator, self.model_params,
+                               self.save_folders['images_folder'], self.gray)
 
-            if epoch % model_interval == 0 and save_models is not None:
-                save_models(self.generator, self.discriminator, self.save_folders['models_folder'], epoch)
+            if model_interval is not None and epoch % model_interval == 0 and save_models is not None:
+                save_models(self.generator, self.discriminator,
+                            self.model_params, self.save_folders['models_folder'], epoch)
 

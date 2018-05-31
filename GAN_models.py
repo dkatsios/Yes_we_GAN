@@ -9,8 +9,8 @@ import numpy as np
 from math import log
 
 
-# simple gan
-def s_gan_generator(dimensions, kernel_initializer):
+# fully connected gan
+def fc_gan_generator(dimensions, kernel_initializer):
     generator = Sequential()
 
     generator.add(Dense(256, input_dim=dimensions['latent_dim'],
@@ -38,7 +38,7 @@ def s_gan_generator(dimensions, kernel_initializer):
     return Model(noise, img)
 
 
-def s_gan_discriminator(dimensions, kernel_initializer, final_act='sigmoid'):
+def fc_gan_discriminator(dimensions, kernel_initializer, final_act='sigmoid'):
     discriminator = Sequential()
 
     discriminator.add(Flatten(input_shape=dimensions['data_shape']))
@@ -102,11 +102,6 @@ def cv_gan_generator(dimensions, kernel_initializer):
     print(generator.output_shape)
     for block_num in range(blocks):
         generator.add(gen_block(generator.output_shape[1:], block_num))
-        # generator.add(Conv2D(64, kernel_size=(5, 5), padding='same'))
-        # generator.add(LeakyReLU(0.2))
-        # generator.add(BatchNormalization(momentum=0.8))
-        # generator.add(Dropout(.3))
-        # generator.add(UpSampling2D(size=(2, 2)))
 
     generator.add(Conv2D(dimensions['data_shape'][-1], kernel_size=(5, 5),
                          padding='same', activation='tanh'))
@@ -131,15 +126,6 @@ def cv_gan_discriminator(dimensions, kernel_initializer, final_act='sigmoid'):
     discriminator.add(Flatten())
     discriminator.add(Dense(1, activation=final_act))
 
-    # model = Sequential()
-    # model.add(Flatten(input_shape=dimensions['data_shape']))
-    # model.add(Dense(512))
-    # model.add(LeakyReLU(alpha=0.2))
-    # model.add(Dense(256))
-    # model.add(LeakyReLU(alpha=0.2))
-    # model.add(Dense(1, activation='sigmoid'))
-    # model.summary()
-
     discriminator.summary()
     img = Input(shape=dimensions['data_shape'])
     validity = discriminator(img)
@@ -151,9 +137,9 @@ def get_models(labels, dimensions):
     final_act = 'linear' if 'wgan' in labels else 'sigmoid'
     kernel_initializer = initializers.random_normal(stddev=0.2) if 'wgan' in labels else 'glorot_uniform'
 
-    if 's' in labels:
-        generator = s_gan_generator(dimensions, kernel_initializer=kernel_initializer)
-        discriminator = s_gan_discriminator(dimensions, kernel_initializer=kernel_initializer, final_act=final_act)
+    if 'fc' in labels:
+        generator = fc_gan_generator(dimensions, kernel_initializer=kernel_initializer)
+        discriminator = fc_gan_discriminator(dimensions, kernel_initializer=kernel_initializer, final_act=final_act)
     elif 'cv' in labels:
         generator = cv_gan_generator(dimensions, kernel_initializer=kernel_initializer)
         discriminator = cv_gan_discriminator(dimensions, kernel_initializer=kernel_initializer, final_act=final_act)

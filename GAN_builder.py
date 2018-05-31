@@ -6,34 +6,29 @@ from GAN_template import GAN
 from WGAN_template import WGAN
 
 
-def build_and_train(models_labels, dataset_label, im_dim, train_params):
-    if dataset_label == 'mnist':
-        dataset = dataset_label
-    else:
-        dataset = './{}/{}x{}/'.format(dataset_label, im_dim, im_dim)
+def build_and_train(models_labels, dataset_label, train_params, save_folders):
 
-    data_iterator, data_shape = get_data_iterator(dataset)
-    im_dim = data_shape[0]
+    load_full = True
+    if 'dont_load_full' in models_labels:
+        load_full = False
+        models_labels.remove('dont_load_full')
+    data_iterator, data_shape = get_data_iterator(dataset_label, load_full=load_full)
 
-    save_results_folder = make_folder(
-        './result_images/{}/{}/{}x{}/'.format(dataset_label, '_'.join(models_labels), im_dim, im_dim))
-    save_models_folder = make_folder(
-        './result_models/{}/{}/{}x{}/'.format(dataset_label, '_'.join(models_labels), im_dim, im_dim))
-
-    save_folders = {'results_folder': save_results_folder,
-                    'models_folder': save_models_folder}
     latent_dim = 100
 
     model_params = {'data_shape': data_shape,
                     'latent_dim': latent_dim,
                     'models_labels': models_labels}
 
+    for folder in save_folders.values():
+        make_folder(folder)
+
     models = get_models(models_labels, model_params)
 
     if 'wgan' in models_labels:
-        gan = WGAN(model_params, models, save_folders, dataset, optimizer='RMSprop')
+        gan = WGAN(model_params, models, save_folders, dataset_label, optimizer='RMSprop')
     else:
-        gan = GAN(model_params, models, save_folders, dataset, optimizer=Adam(0.0002, 0.5))
+        gan = GAN(model_params, models, save_folders, dataset_label, optimizer=Adam(0.0002, 0.5))
 
     gan.train(data_iterator, sample_results, save_models, train_params)
 
@@ -42,62 +37,20 @@ if __name__ == '__main__':
     models_labels = list()
     train_params = {'epochs': 30000,
                     'batch_size': 64,
-                    'sample_interval': 200,
-                    'model_interval': 500,
-                    'wgan_clip': -1,
-                    'label_smoothing': {'real': 1, 'gen': None},
+                    'sample_interval': 1000,
+                    'model_interval': 5000,
+                    'wgan_clip': -1,  # -1 for no clipping
+                    'label_smoothing': None,  # {'real': 1, 'gen': 0},
                     'gen_to_disc_ratio': 1 / 1}
 
-    model_categories = ['s', 'cv']
-    im_dims = [32, 64]
+    models_labels.append('fc')  # append 'fc' for fully connected or 'cv' for convolutional model
+    # models_labels.append('wgan')  # uncomment for using wgan as training method
+    # models_labels.append('ls')  # uncomment for denoting label smoothing at the output files' names
 
-    dataset_label = 'mnist'
-    im_dim = 28
-    for model_category in model_categories:
-        models_labels = list()
-        models_labels.append(model_category)
-        build_and_train(models_labels, dataset_label, im_dim=im_dim, train_params=train_params)
+    dataset_label = './flags/32x32/'  # if data set is a folder with images, write the path of the folder
+    # dataset_label = 'fashion_mnist'  # if data set is a folder with images, write the path of the folder
 
-        models_labels.append('wgan')
-        build_and_train(models_labels, dataset_label, im_dim=im_dim, train_params=train_params)
+    save_folders = {'images_folder': './result_images/{}/{}/'.format(dataset_label, '_'.join(models_labels)),
+                    'models_folder': './result_models/{}/{}/'.format(dataset_label, '_'.join(models_labels))}
 
-    dataset_label = 'flags'
-    for im_dim in im_dims:
-        for model_category in model_categories:
-            models_labels = list()
-            models_labels.append(model_category)
-            build_and_train(models_labels, dataset_label, im_dim=im_dim, train_params=train_params)
-
-            models_labels.append('wgan')
-            build_and_train(models_labels, dataset_label, im_dim=im_dim, train_params=train_params)
-
-    train_params['label_smoothing']['real'] = .9
-    dataset_label = 'mnist'
-    im_dim = 28
-    for model_category in model_categories:
-        models_labels = list()
-        models_labels.append(model_category)
-        models_labels.append('ls')
-        build_and_train(models_labels, dataset_label, im_dim=im_dim, train_params=train_params)
-
-        models_labels.append('wgan')
-        build_and_train(models_labels, dataset_label, im_dim=im_dim, train_params=train_params)
-
-    dataset_label = 'flags'
-    for im_dim in im_dims:
-        for model_category in model_categories:
-            models_labels = list()
-            models_labels.append(model_category)
-            models_labels.append('ls')
-            build_and_train(models_labels, dataset_label, im_dim=im_dim, train_params=train_params)
-
-            models_labels.append('wgan')
-            build_and_train(models_labels, dataset_label, im_dim=im_dim, train_params=train_params)
-
-    # models_labels.append('cv')
-    # models_labels.append('wgan')
-    #
-    # dataset_label = 'mnist'
-    # im_dim = 28
-    #
-    # build_and_train(models_labels, dataset_label, im_dim=im_dim, train_params=train_params)
+    build_and_train(models_labels, dataset_label, train_params=train_params, save_folders=save_folders)

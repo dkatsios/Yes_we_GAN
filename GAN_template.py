@@ -10,13 +10,13 @@ tf.set_random_seed(0)
 
 
 class GAN:
-    def __init__(self, dimensions, models, save_folders, dataset, optimizer=Adam(0.0002, 0.5)):
-        self.dimensions = dimensions
-        self.data_shape = dimensions['data_shape']
-        self.latent_dim = dimensions['latent_dim']
-        self.output_shape = dimensions['data_shape']
+    def __init__(self, model_params, models, save_folders, dataset, optimizer=Adam(0.0002, 0.5)):
+        self.model_params = model_params
+        self.data_shape = model_params['data_shape']
+        self.latent_dim = model_params['latent_dim']
+        self.output_shape = model_params['data_shape']
         self.save_folders = save_folders
-        self.gray = dataset == 'mnist'
+        self.gray = self.data_shape[-1] == 1
 
         # Build and compile the discriminator
         self.discriminator = models['discriminator']
@@ -28,7 +28,7 @@ class GAN:
         self.generator = models['generator']
 
         # The generator takes noise as input and generates imgs
-        z = Input(shape=(dimensions['latent_dim'],))
+        z = Input(shape=(model_params['latent_dim'],))
         img = self.generator(z)
 
         # For the combined model we will only train the generator
@@ -87,6 +87,7 @@ class GAN:
             # ---------------------
 
             reps = max(1, int(gen_to_disc_ratio))
+            g_loss = None
             for _ in range(reps):
                 noise = np.random.normal(0, 1, (batch_size, 100))
 
@@ -98,11 +99,12 @@ class GAN:
 
             # If at save interval => save generated image samples
             if epoch % sample_interval == 0 and sample_results is not None:
-                sample_results(epoch, self.generator, self.dimensions,
-                               self.save_folders['results_folder'], self.gray)
+                sample_results(epoch, self.generator, self.model_params,
+                               self.save_folders['images_folder'], self.gray)
 
             if epoch % model_interval == 0 and save_models is not None:
-                save_models(self.generator, self.discriminator, self.save_folders['models_folder'], epoch)
+                save_models(self.generator, self.discriminator,
+                            self.model_params, self.save_folders['models_folder'], epoch)
 
     @classmethod
     def get_valid_vals(cls, label_smoothing, batch_size):
@@ -112,10 +114,10 @@ class GAN:
         if label_smoothing is None:
             return real, gen
 
-        if label_smoothing['real'] is not None:
+        if 'real' in label_smoothing.keys() and label_smoothing['real'] is not None:
             real = cls.use_label_smoothing(label_smoothing['real'], batch_size)
 
-        if label_smoothing['gen'] is not None:
+        if 'gen' in label_smoothing.keys() and label_smoothing['gen'] is not None:
             gen = cls.use_label_smoothing(label_smoothing['gen'], batch_size)
 
         return real, gen
