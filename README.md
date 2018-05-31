@@ -53,24 +53,57 @@ The datasets used for training the possible combinations of the supported GAN ty
 The only preprocessing that took place was the normalization of the pixel RGBA values to [-1, 1]. No data augmentation was used.
 
 ### Results
-MNIST
-- Fully Connected GAN:
-- Fully Connected WGAN:
-- Convolutional GAN:
-- Convolutional WGAN:
+__MNIST__
+- Fully Connected GAN: The generated images were recognizable and quite clear but not all of them very well shaped.
 
-FLAGS
-- Fully Connected GAN:
-- Fully Connected WGAN:
-- Convolutional GAN:
-- Convolutional WGAN:
+<img src="summary%20results/mnist/s/28x28/30000.png" width=300 />
+
+- Fully Connected WGAN: The generated images were not recognizable and with clear mode collapse even if w-gans are supposed to avoid this problem. However, it could be result of bad implementation.
+
+<img src="summary%20results/mnist/s_wgan/28x28/30000.png" width=300 />
+
+- Fully Connected with label smoothing: The generated images were recognizable and quite clear but not all of them very well shaped. The results were of similar quality to the no label smoothing ones, which is expected since there was no problem with the generator training.
+
+<img src="summary%20results/mnist/s_l/28x28/30000.png" width=300 />
+
+- Convolutional GAN: The generated images are barely recognizable as digits, the shape is not clear at all and the edges are very fuzzy.
+
+<img src="summary%20results/mnist/cv/28x28/30000.png" width=300 />
+
+- Convolutional WGAN: The generated images are very clear, but their shape is not always close to a digit’s one. There is no noise in the resulted images.
+
+<img src="summary%20results/mnist/cv_wgan/28x28/30000.png" width=300 />
+
+
+__FLAGS__
+- Fully Connected GAN: The 32x32 generated images are pretty descent. The flags seem normal shaped and the edges are quite clear. There are some flags that seem to be combination of 2 or more existing ones (as expected). At the 64x64 case the outputs images seem to have the same value for every pixel.
+
+<img src="summary%20results/flags/s/32x32/30000.png" width=300 /><img src="summary%20results/flags/s/64x64/30000.png" width=300 />
+
+- Fully Connected WGAN: The 32x32 generated images are pretty descent. The flags seem normal shaped and the edges are quite clear. There are some flags that seem to be combination of 2 or more existing ones (as expected). The 64x64 generated images on the other hand faced mode collapse, ending producing the same meaningless image every time for each round.
+
+<img src="summary%20results/flags/s_w/32x32/30000.png" width=300 /><img src="summary%20results/flags/s_w/64x64/30000.png" width=300 />
+
+- Convolutional GAN: In both cases (32x32 and 64x64) the generator collapsed. In the first case seems to be a mode collapse, while at the second case it is not yet clear what exactly happened.
+
+<img src="summary%20results/flags/cv/32x32/30000.png" width=300 /><img src="summary%20results/flags/cv/64x64/30000.png" width=300 />
+
+- Convolutional WGAN: In both cases the generated images have a round clear shape with quite understandable patterns but a bit fuzzy and strangely curved shapes. The shapes depicted in the “flags” are not recognizable as known flags symbols, especially at the second case.
+
+<img src="summary%20results/flags/cv_w/32x32/30000.png" width=300 /><img src="summary%20results/flags/cv_w/64x64/30000.png" width=300 />
 
 ### Conclusions
 
-A simple GANs &quot;framework&quot; was developed for easier implementation of standard models and training techniques on different datasets.
+A simple GANs &quot;framework&quot; was developed for easier implementation of standard models and training techniques on different datasets. It offers different functionalities regarding the chosen architecture for the generator and the discriminator, the training method, the implementation of different tips and tricks regarding usual training problems and the usage of different datasets. A number of network models and training techniques combinations was implemented on two datasets, the classic MNIST and a manually selected emoji flags dataset. The results and a short description is given in the _results_ section. The bad results are probably due to mistakes at the implementation and/or wrong hyperparameters choice. Further training sessions would probably give better results.
+
+### Disclaimer
+Different parts of the code have been copied possibly modified from blogs and github repositories. The original codes and the sources are given in the relative directory.
+This was my first attempt to experiment with the GANs framework, which means that the presented code can be improved in an number of ways.
+
+
+### References
 
 [1] LeCun, Yann, Corinna Cortes, and C. J. Burges. &quot;MNIST handwritten digit database.&quot; AT&amp;T Labs [Online]. Available: http://yann. lecun. com/exdb/mnist 2 (2010).
 
 [2] EmojiOne™: emojione.com/download
-
 
