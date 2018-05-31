@@ -15,6 +15,8 @@ np.random.seed(0)
 dataset_array = None
 dataset_list = None
 data_shape = None
+keras_dataset_name = None
+keras_dataset = None
 
 
 def make_folder(folder_path):
@@ -23,18 +25,16 @@ def make_folder(folder_path):
     return folder_path
 
 
-#mnist dataset
-def mnist_data_iterator(batch_size):
-    from keras.datasets import mnist
-    (X_train, _), (_, _) = mnist.load_data()
-
+#keras dataset
+def keras_data_iterator(batch_size):
+    global keras_dataset
     # Rescale -1 to 1
-    X_train = X_train / 127.5 - 1.
-    X_train = np.expand_dims(X_train, axis=3)
+    keras_dataset = keras_dataset / 127.5 - 1.
+    keras_dataset = np.expand_dims(keras_dataset, axis=3)
 
     while True:
-        idx = np.random.randint(0, X_train.shape[0], batch_size)
-        imgs = X_train[idx]
+        idx = np.random.randint(0, keras_dataset.shape[0], batch_size)
+        imgs = keras_dataset[idx]
         yield imgs
 
 
@@ -119,14 +119,16 @@ def save_models(generator, discriminator, model_params, save_folder, epoch):
 
 
 def get_data_iterator(dataset, load_full=True):
-    global dataset_array, dataset_list, data_shape
+    global dataset_array, dataset_list, data_shape, keras_dataset_name, keras_dataset
     try:
         exec('from keras.datasets import {}'.format(dataset))
-        (X_train, _), (_, _) = eval('{}.load_data()'.format(dataset))
-        data_shape = X_train[0].shape
+        exec('keras_dataset = {}'.format(dataset))
+        keras_dataset_name = dataset
+        (keras_dataset, _), (_, _) = eval('{}.load_data()'.format(dataset))
+        data_shape = keras_dataset[0].shape
         if len(data_shape) == 2:
             data_shape = data_shape[0], data_shape[1], 1
-        return mnist_data_iterator, data_shape
+        return keras_data_iterator, data_shape
     except:
         if not os.path.isdir(dataset):
             raise ValueError('dataset_label must be either a Keras data set or a directory with images')
