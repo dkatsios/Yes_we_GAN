@@ -70,13 +70,21 @@ class WGAN:
         self.generator.save('Model_para/models_wgan_generated_epoch_%d.h5' % self.epoch)
         self.discriminator.save('Model_para/models_wgan_discriminated_epoch_%d.h5' % self.epoch)
 
+    def get_repetitions(self, index):
+        reps = 1
+        if isinstance(self.gen_to_disc_ratio, (tuple, list)):
+            reps = max(1, int(self.gen_to_disc_ratio[index]))
+        elif callable(self.gen_to_disc_ratio):
+            reps = self.gen_to_disc_ratio(self.epoch)[index]
+        return reps
+
     def train(self, data_iterator, sample_results, save_models, train_params):
 
         epochs = train_params['epochs']
         batch_size = train_params['batch_size']
         sample_interval = train_params['sample_interval']
         model_interval = train_params['model_interval']
-        gen_to_disc_ratio = train_params['gen_to_disc_ratio']
+        self.gen_to_disc_ratio = train_params['gen_to_disc_ratio']
         wgan_clip = train_params['wgan_clip']
 
         # # Adversarial ground truths
@@ -99,7 +107,7 @@ class WGAN:
             # ---------------------
             #  Train Discriminator
             # ---------------------
-            reps = max(1, int(1 / gen_to_disc_ratio))
+            reps = self.get_repetitions(1)
             for _ in range(reps):
                 # Select a random batch of images
                 imgs = data_iter.__next__()
@@ -127,7 +135,7 @@ class WGAN:
             #  Train Generator
             # ---------------------
 
-            reps = max(1, int(1 / gen_to_disc_ratio))
+            reps = self.get_repetitions(0)
             for _ in range(reps):
                 noise = np.random.normal(0, 1, (batch_size, self.latent_dim))
 

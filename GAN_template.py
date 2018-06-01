@@ -89,7 +89,7 @@ class GAN:
             #  Train Generator
             # ---------------------
 
-                reps = self.get_repetitions(0)
+            reps = self.get_repetitions(0)
             g_loss = None
             for _ in range(reps):
                 noise = np.random.normal(0, 1, (batch_size, 100))
