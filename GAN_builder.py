@@ -186,5 +186,5 @@ def run():
 
 
 if __name__ == '__main__':
-    print(build_and_train.__doc__)
-    # run()
+    # print(build_and_train.__doc__)
+    run()
