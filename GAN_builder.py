@@ -20,6 +20,7 @@ def set_default(model_params, train_params):
                             'latent_dim': 100,
                             'wgan': False,
                             'save_folders': None,
+                            'imgs_resized_size': None,
                             'model_labels': ['fc']
                             }
 
@@ -160,19 +161,20 @@ def build_and_train(model_params=None, train_params=None):
 def run():
     model_params = {'model_type': 'fc',
                     'dataset': 'mnist',
-                    'search_subfolders': False,
+                    'search_subfolders': True,
                     'data_type': None,
                     'load_full_dataset': True,
                     'latent_dim': 100,
                     'wgan': False,
                     'save_folders': None,
-                    'model_labels': None
+                    'model_labels': None,
+                    'imgs_resized_size': (64, 64)
                     }
 
-    train_params = {'epochs': 30000,
+    train_params = {'epochs': 100000,
                     'batch_size': 64,
                     'sample_interval': 1000,
-                    'model_interval': 5000,
+                    'model_interval': 10000,
                     'wgan_clip': -1,
                     'label_smoothing': None,  # {'real': (.7, 1.3), 'gen': None},
                     'gen_to_disc_ratio': (1, 1)}

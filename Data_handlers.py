@@ -8,7 +8,7 @@ from PIL import Image
 import cv2
 
 import matplotlib.pyplot as plt
-from glob import glob
+import glob
 
 import numpy as np
 
@@ -18,6 +18,7 @@ dataset_list = None
 data_shape = None
 keras_dataset_name = None
 keras_dataset = None
+resize_img = None
 
 
 def make_folder(folder_path):
@@ -42,22 +43,18 @@ def keras_data_iterator(batch_size):
 
 def get_im_paths_list(dataset_folder, data_type, search_subfolders=False):
     data_type = '*' if data_type is None else data_type
-    if search_subfolders:
-        total_paths_list = list(glob(dataset_folder + '**' + data_type, recursive=True))
-        im_paths_list = []
-        for path in total_paths_list:
-            im_paths_list.extend(get_im_paths_list(path, data_type))
-    else:
-        im_paths_list = list(glob(dataset_folder + '*.' + data_type))
+    rec = '**/' if search_subfolders else ''
+    im_paths_list = glob.glob(dataset_folder + '/{}*.{}'.format(rec, data_type), recursive=search_subfolders)
     return im_paths_list
 
 
 def set_dataset_array(dataset_folder, model_params):
-    im_paths_list = get_im_paths_list(dataset_folder, model_params['data_type'],
-                                      model_params['search_subfolders'])
+    im_paths_list = get_im_paths_list(dataset_folder, model_params['data_type'], model_params['search_subfolders'])
 
     try:
         img = cv2.imread(im_paths_list[0], cv2.IMREAD_UNCHANGED)
+        if model_params['imgs_resized_size'] is not None:
+            img = cv2.resize(img, model_params['imgs_resized_size'])
     except IndexError:
         raise ValueError('There are no files with the specified extension'
                          ' in this directory: {}'.format(dataset_folder))
@@ -65,15 +62,19 @@ def set_dataset_array(dataset_folder, model_params):
     dataset_array = np.zeros((len(im_paths_list), *data_shape))
     for ind, im_path in enumerate(im_paths_list):
         img = cv2.imread(im_path, cv2.IMREAD_UNCHANGED)
+        if model_params['imgs_resized_size'] is not None:
+            img = cv2.resize(img, model_params['imgs_resized_size'])
         dataset_array[ind] = img
     dataset_array = dataset_array / 127.5 - 1.
 
     return dataset_array, data_shape
 
 
-def set_dataset_list(dataset_folder):
-    dataset_list = list(glob(dataset_folder + '*.*'))
-    img = np.asarray(Image.open(dataset_list[0]).convert('RGBA'))
+def set_dataset_list(dataset_folder, model_params):
+    dataset_list = get_im_paths_list(dataset_folder, model_params['data_type'], model_params['search_subfolders'])
+    img = cv2.imread(dataset_list[0], cv2.IMREAD_UNCHANGED)
+    if model_params['imgs_resized_size'] is not None:
+        img = cv2.resize(img, model_params['imgs_resized_size'])
     data_shape = img.shape
 
     return dataset_list, data_shape
@@ -92,7 +93,9 @@ def folder_no_load_iterator(batch_size):
 
         for i in range(batch_size):
             im_path = random.choice(dataset_list)
-            img = Image.open(im_path).convert('RGBA')
+            img = cv2.imread(im_path, cv2.IMREAD_UNCHANGED)
+            if resize_img is not None:
+                img = cv2.resize(img, resize_img)
             img = np.asarray(img)
             imgs[i] = img
         imgs = imgs / 127.5 - 1.
@@ -136,7 +139,8 @@ def save_models(generator, discriminator, model_params, save_folder, epoch):
 
 
 def get_data_iterator(dataset, model_params):
-    global dataset_array, dataset_list, data_shape, keras_dataset_name, keras_dataset
+    global dataset_array, dataset_list, data_shape, keras_dataset_name, keras_dataset, resize_img
+    resize_img = model_params['imgs_resized_size']
     try:
         exec('from keras.datasets import {}'.format(dataset))
         exec('keras_dataset = {}'.format(dataset))
@@ -154,5 +158,5 @@ def get_data_iterator(dataset, model_params):
             dataset_array, data_shape = set_dataset_array(dataset, model_params)
             return folder_data_iterator, data_shape
         else:
-            dataset_list, data_shape = set_dataset_list(dataset)
+            dataset_list, data_shape = set_dataset_list(dataset, model_params)
             return folder_no_load_iterator, data_shape
