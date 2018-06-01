@@ -1,10 +1,11 @@
-
 import matplotlib.pyplot as plt
 import os
 import random
 import numpy as np
+
 np.random.seed(0)
 from PIL import Image
+import cv2
 
 import matplotlib.pyplot as plt
 from glob import glob
@@ -25,12 +26,13 @@ def make_folder(folder_path):
     return folder_path
 
 
-#keras dataset
+# keras dataset
 def keras_data_iterator(batch_size):
     global keras_dataset
     # Rescale -1 to 1
     keras_dataset = keras_dataset / 127.5 - 1.
-    keras_dataset = np.expand_dims(keras_dataset, axis=3)
+    if len(keras_dataset.shape) == 3:
+        keras_dataset = np.expand_dims(keras_dataset, axis=3)
 
     while True:
         idx = np.random.randint(0, keras_dataset.shape[0], batch_size)
@@ -38,21 +40,38 @@ def keras_data_iterator(batch_size):
         yield imgs
 
 
-def set_dataset_array(dataset_folder, dataset_array):
-    im_paths_list = list(glob(dataset_folder + '*.*'))
-    img = np.asarray(Image.open(im_paths_list[0]).convert('RGBA'))
+def get_im_paths_list(dataset_folder, data_type, search_subfolders=False):
+    data_type = '*' if data_type is None else data_type
+    if search_subfolders:
+        total_paths_list = list(glob(dataset_folder + '**' + data_type, recursive=True))
+        im_paths_list = []
+        for path in total_paths_list:
+            im_paths_list.extend(get_im_paths_list(path, data_type))
+    else:
+        im_paths_list = list(glob(dataset_folder + '*.' + data_type))
+    return im_paths_list
+
+
+def set_dataset_array(dataset_folder, model_params):
+    im_paths_list = get_im_paths_list(dataset_folder, model_params['data_type'],
+                                      model_params['search_subfolders'])
+
+    try:
+        img = cv2.imread(im_paths_list[0], cv2.IMREAD_UNCHANGED)
+    except IndexError:
+        raise ValueError('There are no files with the specified extension'
+                         ' in this directory: {}'.format(dataset_folder))
     data_shape = img.shape
     dataset_array = np.zeros((len(im_paths_list), *data_shape))
     for ind, im_path in enumerate(im_paths_list):
-        img = Image.open(im_path).convert('RGBA')
-        img = np.asarray(img)
+        img = cv2.imread(im_path, cv2.IMREAD_UNCHANGED)
         dataset_array[ind] = img
     dataset_array = dataset_array / 127.5 - 1.
 
     return dataset_array, data_shape
 
 
-def set_dataset_list(dataset_folder, dataset_list):
+def set_dataset_list(dataset_folder):
     dataset_list = list(glob(dataset_folder + '*.*'))
     img = np.asarray(Image.open(dataset_list[0]).convert('RGBA'))
     data_shape = img.shape
@@ -95,8 +114,6 @@ def sample_results(epoch, generator, model_params, results_folder, gray=False):
     if gray:
         cmap = 'gray'
         gen_imgs = np.squeeze(gen_imgs, axis=-1)
-    # if gen_imgs.shape[-1] == 4:
-    #     gen_imgs = gen_imgs[:, :, :, :-1]
 
     cnt = 0
     for i in range(r):
@@ -105,7 +122,7 @@ def sample_results(epoch, generator, model_params, results_folder, gray=False):
                              cmap=cmap)
             axs[i, j].axis('off')
             cnt += 1
-    model_labels = '_'.join(model_params['models_labels'])
+    model_labels = '_'.join(model_params['model_labels'])
     fig.savefig("{}/{}_samples_{}.png".format(results_folder, model_labels, epoch))
     plt.close()
 
@@ -113,12 +130,12 @@ def sample_results(epoch, generator, model_params, results_folder, gray=False):
 def save_models(generator, discriminator, model_params, save_folder, epoch):
     if not os.path.exists(save_folder):
         os.mkdir(save_folder)
-    model_labels = '_'.join(model_params['models_labels'])
+    model_labels = '_'.join(model_params['model_labels'])
     generator.save('{}/{}_generator_{}.h5'.format(save_folder, model_labels, epoch))
     discriminator.save('{}/{}_discriminator_{}.h5'.format(save_folder, model_labels, epoch))
 
 
-def get_data_iterator(dataset, load_full=True):
+def get_data_iterator(dataset, model_params):
     global dataset_array, dataset_list, data_shape, keras_dataset_name, keras_dataset
     try:
         exec('from keras.datasets import {}'.format(dataset))
@@ -132,11 +149,10 @@ def get_data_iterator(dataset, load_full=True):
     except:
         if not os.path.isdir(dataset):
             raise ValueError('dataset_label must be either a Keras data set or a directory with images')
-        if load_full:
-            dataset_array, data_shape = set_dataset_array(dataset, dataset_array)
+
+        if model_params['load_full_dataset']:
+            dataset_array, data_shape = set_dataset_array(dataset, model_params)
             return folder_data_iterator, data_shape
         else:
-            dataset_list, data_shape = set_dataset_list(dataset, dataset_array)
+            dataset_list, data_shape = set_dataset_list(dataset)
             return folder_no_load_iterator, data_shape
-
-
