@@ -30,7 +30,8 @@ def keras_data_iterator(batch_size):
     global keras_dataset
     # Rescale -1 to 1
     keras_dataset = keras_dataset / 127.5 - 1.
-    keras_dataset = np.expand_dims(keras_dataset, axis=3)
+    if len(keras_dataset.shape) == 3:
+        keras_dataset = np.expand_dims(keras_dataset, axis=3)
 
     while True:
         idx = np.random.randint(0, keras_dataset.shape[0], batch_size)
