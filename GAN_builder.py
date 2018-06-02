@@ -87,6 +87,10 @@ def build_and_train(model_params=None, train_params=None):
                              (./result_images/dataset/ and ./result_models/dataset/).
                              Default: None
 
+        - imgs_resized_size: (tuple or None) tuple with two integers denoting the resizing width, height.
+                             If None, no resize will take place.
+                             Default: None
+
         - model_labels:      (list) of strings with different labels that can be used for determining the name
                              of the default saving folders and files. All the labels will be joined with '_'.
                              Default: None
@@ -168,7 +172,7 @@ def run():
                     'wgan': False,
                     'save_folders': None,
                     'model_labels': None,
-                    'imgs_resized_size': (64, 64)
+                    'imgs_resized_size': None
                     }
 
     train_params = {'epochs': 100000,
