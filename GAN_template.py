@@ -48,7 +48,7 @@ class GAN:
         if isinstance(self.gen_to_disc_ratio, (tuple, list)):
             reps = max(1, int(self.gen_to_disc_ratio[index]))
         elif callable(self.gen_to_disc_ratio):
-            reps = self.gen_to_disc_ratio(self.epoch)[index]
+            reps = self.gen_to_disc_ratio(self.epoch, {'d_loss': self.d_loss, 'g_loss': self.g_loss})[index]
         return reps
 
     def train(self, data_iterator, sample_results, save_models, train_params):
@@ -83,22 +83,24 @@ class GAN:
                 # Train the discriminator
                 d_loss_real = self.discriminator.train_on_batch(imgs, real)
                 d_loss_fake = self.discriminator.train_on_batch(gen_imgs, gen)
-                d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
+                self.d_loss = 0.5 * np.add(d_loss_real, d_loss_fake)
 
             # ---------------------
             #  Train Generator
             # ---------------------
 
             reps = self.get_repetitions(0)
-            g_loss = None
             for _ in range(reps):
                 noise = np.random.normal(0, 1, (batch_size, 100))
 
                 # Train the generator (to have the discriminator label samples as valid)
-                g_loss = self.combined.train_on_batch(noise, real)
+                self.g_loss = self.combined.train_on_batch(noise, real)
 
             # Plot the progress
-            print("%d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch, d_loss[0], 100*d_loss[1], g_loss))
+            print("%d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch,
+                                                                  self.d_loss[0],
+                                                                  100 * self.d_loss[1],
+                                                                  self.g_loss))
 
             # If at save interval => save generated image samples
             if epoch % sample_interval == 0 and sample_results is not None:

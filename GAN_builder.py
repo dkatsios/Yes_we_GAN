@@ -21,6 +21,8 @@ def set_default(model_params, train_params):
                             'wgan': False,
                             'save_folders': None,
                             'imgs_resized_size': None,
+                            'layers_sizes': None,
+                            'use_batch_norm': True,
                             'model_labels': ['fc']
                             }
 
@@ -46,89 +48,110 @@ def build_and_train(model_params=None, train_params=None):
     Takes as arguments two dictionaries:
 
     model_params:
-        Dictionary with the parameters of the models for the generator and the discriminator and the save folders.
-        The arguments of model_params are:
+      Dictionary with the parameters of the models for the generator and the discriminator and the save folders.
+      The arguments of model_params are:
 
-        - model_type:        (string or dictionary) if string must be one of 'fc' or 'cv' for denoting
-                             the type of layers of the generator and the discriminator models.
-                             'fc' stands for Fully connected (Dense) while 'cv' for convolutional (DCGAN).
-                             If a dictionary, must have as keys 'generator' and 'discriminator'
-                             with values the corresponding Kears models.
-                             Default: 'fc'
+      - model_type:        (string or dictionary) if string must be one of 'fc' or 'cv' for denoting
+                         the type of layers of the generator and the discriminator models.
+                         'fc' stands for Fully connected (Dense) while 'cv' for convolutional (DCGAN).
+                         If a dictionary, must have as keys 'generator' and 'discriminator'
+                         with values the corresponding Kears models.
+                         Default: 'fc'
 
-        - dataset:           (string) can be either the name of an existing Keras dataset (e.g. mnist, cifar10 etc.)
-                             or the (relative) path of a folder that contains the (equal sized) training images.
-                             Default: 'mnist'
+    - dataset:           (string) can be either the name of an existing Keras dataset (e.g. mnist, cifar10 etc.)
+                         or the (relative) path of a folder that contains the (equal sized) training images.
+                         Default: 'mnist'
 
-        - search_subfolders: (boolean) if True the model will search recursively
-                             all the subfolders of the directory for images.
-                             Default: False
+    - search_subfolders: (boolean) if True the model will search recursively
+                         all the subfolders of the directory for images.
+                         Default: False
 
-        - data_type:         (string) with the data type (extension) of the training files (e.g. 'png')
-                             if None it will read all the existing files (which must be cv2 compatible)
-                             the number of the channels (e.g. if there is Alpha channel)
-                             will be recognized automatically.
-                             Default: None
+    - data_type:         (string) with the data type (extension) of the training files (e.g. 'png')
+                         if None it will read all the existing files (which must be cv2 compatible)
+                         the number of the channels (e.g. if there is Alpha channel)
+                         will be recognized automatically.
+                         Default: None
 
-        - load_full_dataset: (boolean) in case that data set is a folder, it defines if it will load all the images
-                             or it will load the images paths and read the images at each iteration.
-                             If data set fits in memory it is faster if the value is True.
-                             Default: True
+    - load_full_dataset: (boolean) in case that data set is a folder, it defines if it will load all the images
+                         or it will load the images paths and read the images at each iteration.
+                         If data set fits in memory it is faster if the value is True.
+                         Default: True
 
-        - latent_dim:        (integer) the number of dimensions of the latent space to be used (size of the array).
-                             Default: 100
+    - latent_dim:        (integer) the number of dimensions of the latent space to be used (size of the array).
+                         Default: 100
 
-        - wgan:              (boolean) if True Wasserstein training method will be applied
-                             Default: False
+    - wgan:              (boolean) if True Wasserstein training method will be applied
+                         Default: False
 
-        - save_folders:      (dictionary) with keys 'images_folder' and 'models_folder'
-                             which have as values the directories where the results (images and models) will be saved
-                             if None, the default paths will be used
-                             (./result_images/dataset/ and ./result_models/dataset/).
-                             Default: None
+    - save_folders:      (dictionary) with keys 'images_folder' and 'models_folder'
+                         which have as values the directories where the results (images and models) will be saved
+                         if None, the default paths will be used
+                         (./result_images/dataset/ and ./result_models/dataset/).
+                         Default: None
 
-        - imgs_resized_size: (tuple or None) tuple with two integers denoting the resizing width, height.
-                             If None, no resize will take place.
-                             Default: None
+    - imgs_resized_size: (tuple or None) tuple with two integers denoting the resizing width, height.
+                         If None, no resize will take place.
+                         Default: None
 
-        - model_labels:      (list) of strings with different labels that can be used for determining the name
-                             of the default saving folders and files. All the labels will be joined with '_'.
-                             Default: None
+    - layers_sizes:      (tuple, dict or None)
+                         In the case that 'model_type' is 'fc':
+
+                           - if it is a list, it must have the number of units
+                             for each Dense layer of both generator and discriminator.
+
+                           - if it is a dictionary, it must have two arguments:
+                              - 'generator' with value a list with the generator's layers' sizes
+                              - 'discriminator' with value a list with the discriminator's layers' sizes.
+
+                           - if None the default values 256, 512, 1024 for the generator
+                             and 512, 256 for the discriminator will be used
+                         Default: None
+
+    - use_batch_norm:    (boolean) if True, a BatchNormalization(momentum=0.8) layer
+                         will be added after each block of the network.
+                         Default: True
+
+    - model_labels:      (list) of strings with different labels that can be used for determining the name
+                         of the default saving folders and files. All the labels will be joined with '_'.
+                         Default: None
 
     train_params:
-        Dictionary with the training parameters
-        The arguments of train_params are:
+      Dictionary with the training parameters
+      The arguments of train_params are:
 
-        - epochs:           (integer) number of epochs.
-                            For each epoch it runs for as many repetitions defined at gen_to_disc_ratio.
-                            Default: 30000
+      - epochs:           (integer) number of epochs.
+                          For each epoch it runs for as many repetitions defined at gen_to_disc_ratio.
+                          Default: 30000
 
-        - batch_size:       (integer) size of the batch of samples at each training iteration.
-                            Default: 64
+      - batch_size:       (integer) size of the batch of samples at each training iteration.
+                          Default: 64
 
-        - sample_interval:  (integer) denotes every how many epochs a number of generated samples will be saved.
-                            Default: 1000
+      - sample_interval:  (integer) denotes every how many epochs a number of generated samples will be saved.
+                          Default: 1000
 
-        - model_interval:   (integer) denotes every how many epochs the generator and discriminator models
-                            will be saved.
-                            Default: 5000
+      - model_interval:   (integer) denotes every how many epochs the generator and discriminator models
+                          will be saved.
+                          Default: 5000
 
-        - wgan_clip':       (float) if wgan is used, denotes the interval
-                            of the discriminator weights clipping (-wgan_clip, wgan_clip).
-                            Default: -1
+      - wgan_clip':       (float) if wgan is used, denotes the interval
+                          of the discriminator weights clipping (-wgan_clip, wgan_clip).
+                          Default: -1
 
-        - label_smoothing': (dictionary or None) with keys 'real' and 'gen'
-                            and values either a number or a tuple of two numbers or None.
-                            - If None, no smoothing will take place for the specific category
-                            - If a single number, the labels of this category will be equal to this number.
-                            - If a tuple of two numbers, the labels will be uniformly sampled from this interval.
-                            Default: None
+      - label_smoothing': (dictionary or None) with keys 'real' and 'gen'
+                          and values either a number or a tuple of two numbers or None.
+                          - If None, no smoothing will take place for the specific category
+                          - If a single number, the labels of this category will be equal to this number.
+                          - If a tuple of two numbers, the labels will be uniformly sampled from this interval.
+                          Default: None
 
-        - gen_to_disc_ratio (tuple or function) if tuple of two integers the numbers will denote how many
-                            times the generator and the discriminator will be trained at each epoch
-                            if function it must take as argument the number of current epoch
-                            and return a tuple as described above.
-                            Default: (1, 1)
+      - gen_to_disc_ratio (tuple or function) if tuple with two integers, the numbers will denote how many
+                          times the generator and the discriminator will be trained at each epoch
+                          if function it must take as arguments:
+                            - the number of current epoch
+                            - a dictionary with arguments 'g_loss' and 'd_loss' and values the current loses
+                              of the generator and the discriminator respectively
+                          and return a tuple with two integers as described above.
+                          Default: (1, 1)
     """
 
     model_params, train_params = set_default(model_params, train_params)
@@ -165,22 +188,22 @@ def build_and_train(model_params=None, train_params=None):
 def run():
     model_params = {'model_type': 'fc',
                     'dataset': 'mnist',
-                    'search_subfolders': True,
+                    'search_subfolders': False,
                     'data_type': None,
                     'load_full_dataset': True,
                     'latent_dim': 100,
                     'wgan': False,
                     'save_folders': None,
                     'model_labels': None,
-                    'imgs_resized_size': None
-                    }
+                    'layers_sizes': None,
+                    'imgs_resized_size': (128, 128)}
 
     train_params = {'epochs': 100000,
                     'batch_size': 64,
                     'sample_interval': 1000,
                     'model_interval': 10000,
                     'wgan_clip': -1,
-                    'label_smoothing': None,  # {'real': (.7, 1.3), 'gen': None},
+                    'label_smoothing': None,
                     'gen_to_disc_ratio': (1, 1)}
 
     model_labels = [model_params['model_type']]
@@ -192,5 +215,4 @@ def run():
 
 
 if __name__ == '__main__':
-    # print(build_and_train.__doc__)
     run()

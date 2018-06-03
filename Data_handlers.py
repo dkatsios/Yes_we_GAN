@@ -64,8 +64,8 @@ def set_dataset_array(dataset_folder, model_params):
         img = cv2.imread(im_path, cv2.IMREAD_UNCHANGED)
         if model_params['imgs_resized_size'] is not None:
             img = cv2.resize(img, model_params['imgs_resized_size'])
-        dataset_array[ind] = img
-    dataset_array = dataset_array / 127.5 - 1.
+        dataset_array[ind] = img / 127.5 - 1.
+    dataset_array = dataset_array
 
     return dataset_array, data_shape
 
