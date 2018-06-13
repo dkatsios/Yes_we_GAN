@@ -1,3 +1,5 @@
+# source: https://github.com/eriklindernoren/Keras-GAN/blob/master/cgan/cgan.py
+
 from keras.layers import Input
 from keras.models import Model
 from keras.optimizers import Adam

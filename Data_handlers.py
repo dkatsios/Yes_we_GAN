@@ -59,14 +59,18 @@ def set_dataset_array(dataset_folder, model_params):
         raise ValueError('There are no files with the specified extension'
                          ' in this directory: {}'.format(dataset_folder))
     data_shape = img.shape
+    if model_params['imgs_resized_size'] is not None:
+        data_shape = *model_params['imgs_resized_size'], img.shape[-1]
+
     dataset_array = np.zeros((len(im_paths_list), *data_shape))
     for ind, im_path in enumerate(im_paths_list):
         img = cv2.imread(im_path, cv2.IMREAD_UNCHANGED)
-        if model_params['imgs_resized_size'] is not None:
-            img = cv2.resize(img, model_params['imgs_resized_size'])
-        dataset_array[ind] = img / 127.5 - 1.
-    dataset_array = dataset_array
-
+        try:
+            if model_params['imgs_resized_size'] is not None:
+                img = cv2.resize(img, model_params['imgs_resized_size'])
+            dataset_array[ind] = img / 127.5 - 1.
+        except:
+            dataset_array[ind] = dataset_array[ind-1]
     return dataset_array, data_shape
 
 
@@ -141,6 +145,8 @@ def save_models(generator, discriminator, model_params, save_folder, epoch):
 def get_data_iterator(dataset, model_params):
     global dataset_array, dataset_list, data_shape, keras_dataset_name, keras_dataset, resize_img
     resize_img = model_params['imgs_resized_size']
+    if resize_img is not None:
+        assert len(resize_img) == 2
     try:
         exec('from keras.datasets import {}'.format(dataset))
         exec('keras_dataset = {}'.format(dataset))

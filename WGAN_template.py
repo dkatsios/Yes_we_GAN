@@ -50,25 +50,19 @@ class WGAN:
 
         # The generator takes noise as input and generates imgs
         z = Input(shape=(model_params['latent_dim'],))
-        img = self.generator(z)
+        gen_imgs = self.generator(z)
 
         # For the combined model we will only train the generator
         self.discriminator.trainable = False
 
         # The discriminator takes generated images as input and determines validity
-        validity = self.discriminator(img)
+        validity_gen = self.discriminator(gen_imgs)
 
         # The combined model  (stacked generator and discriminator)
         # Trains the generator to fool the discriminator
-        self.combined = Model(z, validity)
+        self.combined = Model(z, validity_gen)
         self.combined.compile(loss=wasserstein_loss,
                               optimizer=optimizer)
-
-    def save_models(self):
-        if not os.path.exists('Model_para'):
-            os.mkdir('Model_para')
-        self.generator.save('Model_para/models_wgan_generated_epoch_%d.h5' % self.epoch)
-        self.discriminator.save('Model_para/models_wgan_discriminated_epoch_%d.h5' % self.epoch)
 
     def get_repetitions(self, index):
         reps = 1

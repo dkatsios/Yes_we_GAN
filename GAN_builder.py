@@ -4,6 +4,7 @@ from GAN_models import get_models
 from Data_handlers import get_data_iterator, sample_results, save_models, make_folder
 from GAN_template import GAN
 from WGAN_template import WGAN
+from WGAN_2_template import WGAN_2
 
 
 def set_default(model_params, train_params):
@@ -19,9 +20,11 @@ def set_default(model_params, train_params):
                             'load_full_dataset': True,
                             'latent_dim': 100,
                             'wgan': False,
+                            'wgan_gradient_penalty': False,
                             'save_folders': None,
                             'imgs_resized_size': None,
                             'layers_sizes': None,
+                            'kernel_initializer': None,
                             'use_batch_norm': True,
                             'model_labels': ['fc']
                             }
@@ -31,6 +34,7 @@ def set_default(model_params, train_params):
                             'sample_interval': 1000,
                             'model_interval': 5000,
                             'wgan_clip': -1,
+                            'wgan_gradient_penalty_wight': 10,
                             'label_smoothing': None,  # {'real': (.7, 1.3), 'gen': None},
                             'gen_to_disc_ratio': (1, 1)}
 
@@ -41,6 +45,16 @@ def set_default(model_params, train_params):
         default_train_params[key] = value
 
     return default_model_params, default_train_params
+
+
+def make_log(folder, model_params, train_params):
+    with open(folder + 'log.txt', 'w') as f:
+        f.write('model parameters:\n')
+        for key, value in model_params.items():
+            f.write('{}:\t{}\n'.format(key, value))
+        f.write('\ntrain parameters:\n')
+        for key, value in train_params.items():
+            f.write('{}:\t{}\n'.format(key, value))
 
 
 def build_and_train(model_params=None, train_params=None):
@@ -107,8 +121,11 @@ def build_and_train(model_params=None, train_params=None):
                              and 512, 256 for the discriminator will be used
                          Default: None
 
-    - use_batch_norm:    (boolean) if True, a BatchNormalization(momentum=0.8) layer
-                         will be added after each block of the network.
+    - use_batch_norm:    (boolean, float or dictionary) if True, a BatchNormalization(momentum=0.8) layer
+                         will be added before the activation function(s) of each block of the generator model.
+                         If float the same as True, but with momentum=use_batch_norm
+                         If dictionary, it must have two arguments: 'generator' and 'discriminator'
+                         with values either boolean or float as described above.
                          Default: True
 
     - model_labels:      (list) of strings with different labels that can be used for determining the name
@@ -172,13 +189,19 @@ def build_and_train(model_params=None, train_params=None):
     for folder in save_folders.values():
         make_folder(folder)
 
+    make_log(save_folders['images_folder'], model_params, train_params)
+
     if isinstance(model_params['model_type'], str):
         models = get_models(model_params)
     else:
         models = model_params['model_type']
 
     if model_params['wgan']:
-        gan = WGAN(model_params, models, save_folders, dataset_label, optimizer='RMSprop')
+        if model_params['wgan_gradient_penalty']:
+            gan = WGAN_2(model_params, train_params, models, save_folders,
+                         dataset_label, optimizer=Adam(0.0001, beta_1=0.5, beta_2=0.9))
+        else:
+            gan = WGAN(model_params, models, save_folders, dataset_label, optimizer='RMSprop')
     else:
         gan = GAN(model_params, models, save_folders, dataset_label, optimizer=Adam(0.0002, 0.5))
 
@@ -186,27 +209,30 @@ def build_and_train(model_params=None, train_params=None):
 
 
 def run():
-    model_params = {'model_type': 'fc',
-                    'dataset': 'mnist',
+    model_params = {'model_type': 'cv',
+                    'dataset': './cats_dogs/Dog',
                     'search_subfolders': False,
-                    'data_type': None,
+                    'data_type': 'jpg',
                     'load_full_dataset': True,
                     'latent_dim': 100,
-                    'wgan': False,
+                    'wgan': True,
+                    'wgan_gradient_penalty': True,
                     'save_folders': None,
                     'model_labels': None,
                     'layers_sizes': None,
-                    'imgs_resized_size': (128, 128)}
+                    'use_batch_norm': True,
+                    'imgs_resized_size': (64, 64)}
 
     train_params = {'epochs': 100000,
                     'batch_size': 64,
-                    'sample_interval': 1000,
+                    'sample_interval': 500,
                     'model_interval': 10000,
-                    'wgan_clip': -1,
+                    'wgan_clip': .01,
+                    'wgan_gradient_penalty_weight': 10,
                     'label_smoothing': None,
-                    'gen_to_disc_ratio': (1, 1)}
+                    'gen_to_disc_ratio': (1, 5)}
 
-    model_labels = [model_params['model_type']]
+    model_labels = [model_params['model_type'], 'batch_norm_wgan_2_g1_d5']
     # append any labels to be used for the saving folders and files naming (e.g. model_labels.append('with_wgan')
 
     model_params['model_labels'] = model_labels

@@ -1,9 +1,9 @@
 from keras.layers import Input, Dense, Reshape, Flatten
-from keras.layers import BatchNormalization
 from keras.layers.advanced_activations import LeakyReLU
 from keras.models import Sequential, Model
 
 import numpy as np
+from .helpers import handle_batch_norm
 
 
 # fully connected gan
@@ -20,10 +20,12 @@ def fc_gan_generator(model_params, kernel_initializer):
         block = Sequential(name='gen_block_{}'.format(block_num))
 
         block.add(Dense(layer_size, input_dim=input_shape, kernel_initializer=kernel_initializer))
-        block.add(LeakyReLU(alpha=0.2))
 
-        if use_batch_norm:
-            block.add(BatchNormalization(momentum=0.8))
+        bn = handle_batch_norm(use_batch_norm, is_generator=True)
+        if bn is not None:
+            block.add(bn)
+
+        block.add(LeakyReLU(alpha=0.2))
 
         return block
 
@@ -57,14 +59,16 @@ def fc_gan_discriminator(model_params, kernel_initializer, final_act='sigmoid'):
         elif isinstance(model_params['layers_sizes'], dict):
             layers_sizes = model_params['layers_sizes']['discriminator']
 
-    def gen_block(layer_size, input_shape, block_num, use_batch_norm, kernel_initializer):
+    def disc_block(layer_size, input_shape, block_num, use_batch_norm, kernel_initializer):
         block = Sequential(name='gen_block_{}'.format(block_num))
 
         block.add(Dense(layer_size, input_dim=input_shape, kernel_initializer=kernel_initializer))
-        block.add(LeakyReLU(alpha=0.2))
 
-        if use_batch_norm:
-            block.add(BatchNormalization(momentum=0.8))
+        bn = handle_batch_norm(use_batch_norm, is_generator=False)
+        if bn is not None:
+            block.add(bn)
+
+        block.add(LeakyReLU(alpha=0.2))
 
         return block
 
@@ -73,7 +77,7 @@ def fc_gan_discriminator(model_params, kernel_initializer, final_act='sigmoid'):
 
     for block_num, layer_size in enumerate(layers_sizes):
         input_shape = discriminator.output_shape[1]
-        layer = gen_block(layer_size, input_shape, block_num, model_params['use_batch_norm'], kernel_initializer)
+        layer = disc_block(layer_size, input_shape, block_num, model_params['use_batch_norm'], kernel_initializer)
         discriminator.add(layer)
 
     discriminator.add(Dense(1, activation=final_act))
