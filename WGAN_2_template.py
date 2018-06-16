@@ -26,7 +26,7 @@ def wasserstein_loss(y_true, y_pred):
     return K.mean(y_true * y_pred)
 
 
-def gradient_penalty_loss(y_true, y_pred, averaged_samples, gradient_penalty_weight):
+def gradient_penalty_loss(y_true, y_pred, averaged_samples, wgan_gp_weight):
     """Calculates the gradient penalty loss for a batch of "averaged" samples.
 
     In Improved WGANs, the 1-Lipschitz constraint is enforced by adding a term to the loss function
@@ -56,7 +56,7 @@ def gradient_penalty_loss(y_true, y_pred, averaged_samples, gradient_penalty_wei
     #   ... and sqrt
     gradient_l2_norm = K.sqrt(gradients_sqr_sum)
     # compute lambda * (1 - ||grad||)^2 still for each single sample
-    gradient_penalty = gradient_penalty_weight * K.square(1 - gradient_l2_norm)
+    gradient_penalty = wgan_gp_weight * K.square(1 - gradient_l2_norm)
     # return the mean as loss over all the batch samples
     return K.mean(gradient_penalty)
 
@@ -107,7 +107,7 @@ class WGAN_2:
         self.discriminator.trainable = True
         self.generator.trainable = False
 
-        wgan_gradient_penalty_weight = self.model_params['wgan_gradient_penalty']
+        wgan_gp_weight = self.model_params['wgan_gradient_penalty']
 
         # The discriminator_model is more complex. It takes both real image samples and random noise seeds as input.
         # The noise seed is run through the generator model to get generated images. Both real and generated images
@@ -131,7 +131,7 @@ class WGAN_2:
         # of the function with the averaged samples here.
         partial_gp_loss = partial(gradient_penalty_loss,
                                   averaged_samples=avg_imgs,
-                                  gradient_penalty_weight=wgan_gradient_penalty_weight)
+                                  wgan_gp_weight=wgan_gp_weight)
         partial_gp_loss.__name__ = 'gradient_penalty'  # Functions need names or Keras will throw an error
 
         # Keras requires that inputs and outputs have the same number of samples. This is why we didn't concatenate the
