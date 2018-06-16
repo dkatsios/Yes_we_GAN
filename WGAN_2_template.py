@@ -164,6 +164,7 @@ class WGAN_2:
 
         epochs = train_params['epochs']
         batch_size = train_params['batch_size']
+        print_interval = train_params['print_interval']
         sample_interval = train_params['sample_interval']
         model_interval = train_params['model_interval']
         self.gen_to_disc_ratio = train_params['gen_to_disc_ratio']
@@ -202,8 +203,12 @@ class WGAN_2:
 
                 g_loss = self.combined.train_on_batch(noise, positive_y)
 
-                # Plot the progress
-                print("%d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch, d_loss[0], 100 * d_loss[1], g_loss))
+            # Plot the progress
+            if epoch % print_interval == 0:
+                print("%d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch,
+                                                                      d_loss[0],
+                                                                      100 * d_loss[1],
+                                                                      g_loss))
 
             # If at save interval => save generated image samples
             if sample_interval is not None and epoch % sample_interval == 0 and sample_results is not None:

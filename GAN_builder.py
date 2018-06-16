@@ -31,6 +31,7 @@ def set_default(model_params, train_params):
 
     default_train_params = {'epochs': 30000,
                             'batch_size': 64,
+                            'print_interval': 100,
                             'sample_interval': 1000,
                             'model_interval': 5000,
                             'wgan_clip': -1,
@@ -149,6 +150,9 @@ def build_and_train(model_params=None, train_params=None):
       - batch_size:       (integer) size of the batch of samples at each training iteration.
                           Default: 64
 
+      - print_interval:   (integer) denotes every how many epochs the results will be printed.
+                          Default: 100
+
       - sample_interval:  (integer) denotes every how many epochs a number of generated samples will be saved.
                           Default: 1000
 
@@ -235,6 +239,7 @@ def run():
 
     train_params = {'epochs': 100000,
                     'batch_size': 64,
+                    'print_interval': 100,
                     'sample_interval': 500,
                     'model_interval': 10000,
                     'wgan_clip': .01,

@@ -57,6 +57,7 @@ class GAN:
 
         epochs = train_params['epochs']
         batch_size = train_params['batch_size']
+        print_interval = train_params['print_interval']
         sample_interval = train_params['sample_interval']
         model_interval = train_params['model_interval']
         self.gen_to_disc_ratio = train_params['gen_to_disc_ratio']
@@ -99,10 +100,11 @@ class GAN:
                 self.g_loss = self.combined.train_on_batch(noise, real)
 
             # Plot the progress
-            print("%d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch,
-                                                                  self.d_loss[0],
-                                                                  100 * self.d_loss[1],
-                                                                  self.g_loss))
+            if epoch % print_interval == 0:
+                print("%d [D loss: %f, acc.: %.2f%%] [G loss: %f]" % (epoch,
+                                                                      self.d_loss[0],
+                                                                      100 * self.d_loss[1],
+                                                                      self.g_loss))
 
             # If at save interval => save generated image samples
             if epoch % sample_interval == 0 and sample_results is not None:
